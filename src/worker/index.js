@@ -1,42 +1,74 @@
-// functions/api/updates.js
 export default {
-    async fetch(request, env, ctx) {
-      const url = new URL(request.url);
-      
-      // CORS headers
-      const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Content-Type': 'application/json',
-      };
-  
-      // Handle OPTIONS request for CORS preflight
-      if (request.method === 'OPTIONS') {
-        return new Response(null, { headers: corsHeaders });
-      }
-  
-      try {
-        switch (request.method) {
-          case 'GET':
-            const searchTerm = url.searchParams.get('search')?.toLowerCase();
-            if (!searchTerm) {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Content-Type': 'application/json',
+    };
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    try {
+      switch (request.method) {
+        case 'GET':
+          // Check if this is a suggestions request
+          if (url.searchParams.has('suggest')) {
+            const term = url.searchParams.get('suggest')?.toLowerCase() || '';
+            
+            if (term.length < 2) {
               return new Response(
-                JSON.stringify({ error: 'Search term required' }), 
-                { status: 400, headers: corsHeaders }
+                JSON.stringify({ suggestions: [] }), 
+                { status: 200, headers: corsHeaders }
               );
             }
-  
-            const result = await env.DB.prepare(
-              `SELECT * FROM updates WHERE LOWER(name) LIKE ?`
+
+            // Get all matching items for suggestions
+            const suggestions = await env.DB.prepare(
+              `SELECT name, verdict, up_votes, down_votes 
+               FROM updates 
+               WHERE LOWER(name) LIKE ? 
+               ORDER BY 
+                CASE 
+                  WHEN LOWER(name) = ? THEN 1
+                  WHEN LOWER(name) LIKE ? THEN 2
+                  ELSE 3
+                END,
+                (up_votes + down_votes) DESC
+               LIMIT 5`
             )
-            .bind(`%${searchTerm}%`)
-            .first();
-  
+            .bind(`%${term}%`, term, `${term}%`)
+            .all();
+
             return new Response(
-              JSON.stringify(result || { error: 'Not found' }), 
-              { status: result ? 200 : 404, headers: corsHeaders }
+              JSON.stringify({ suggestions: suggestions.results }), 
+              { status: 200, headers: corsHeaders }
             );
+          }
+
+          // Regular search - now requires exact match
+          const searchTerm = url.searchParams.get('search')?.toLowerCase();
+          if (!searchTerm) {
+            return new Response(
+              JSON.stringify({ error: 'Search term required' }), 
+              { status: 400, headers: corsHeaders }
+            );
+          }
+
+          const result = await env.DB.prepare(
+            `SELECT * FROM updates WHERE LOWER(name) = ?`
+          )
+          .bind(searchTerm)
+          .first();
+
+          return new Response(
+            JSON.stringify(result || { error: 'Not found' }), 
+            { status: result ? 200 : 404, headers: corsHeaders }
+          );
   
           case 'POST':
             const { name, voteType } = await request.json();
@@ -101,12 +133,12 @@ export default {
               JSON.stringify({ error: 'Method not allowed' }), 
               { status: 405, headers: corsHeaders }
             );
+          }
+        } catch (error) {
+          return new Response(
+            JSON.stringify({ error: error.message }), 
+            { status: 500, headers: corsHeaders }
+          );
         }
-      } catch (error) {
-        return new Response(
-          JSON.stringify({ error: error.message }), 
-          { status: 500, headers: corsHeaders }
-        );
       }
     }
-  };
