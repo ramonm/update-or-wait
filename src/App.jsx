@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, ThumbsUp, ThumbsDown, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from './components/ui/alert';
-import { Button } from './components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from './components/ui/Alert';
+import { Button } from './components/ui/Button';
 import { cn } from './lib/utils';
 
 // Mock database - in production, this would come from your backend
