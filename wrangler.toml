@@ -1,0 +1,10 @@
+name = "update-or-wait"
+compatibility_date = "2024-03-17"
+main = "src/worker/index.js"
+workers_dev = true
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "update-or-wait-db"
+database_id = "9c3248d4-3fa2-474f-8a51-83c2f3b2f645"
