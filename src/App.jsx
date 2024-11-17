@@ -238,12 +238,27 @@ const App = () => {
 
         {/* Header */}
         <div className="text-center">
-          <h1 className={cn(
-            "text-3xl font-bold transition-colors",
-            isDark ? "text-white hover:text-blue-400" : "text-gray-900 hover:text-blue-600"
-          )}>
+          <a 
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              // Reset all states
+              setSearch('');
+              setResult(null);
+              setMessage('');
+              // Update URL to homepage
+              window.history.pushState({}, '', '/');
+            }}
+            className={cn(
+              "text-3xl font-bold transition-all duration-200 cursor-pointer inline-block",
+              isDark 
+                ? "text-white hover:text-blue-400" 
+                : "text-gray-900 hover:text-blue-600",
+              "hover:scale-[1.02] active:scale-[0.98]"
+            )}
+          >
             Update or Wait?
-          </h1>
+          </a>
           <p className={cn(
             "mt-2",
             isDark ? "text-gray-300" : "text-gray-600"
