@@ -5,6 +5,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/Alert/index
 import { Button } from '@/components/ui/Button/index.jsx';
 import { cn } from '@/lib/utils.js';
 
+const API_URL = 'https://update-or-wait.ramon-m.workers.dev';
+
 const App = () => {
   const [search, setSearch] = useState('');
   const [result, setResult] = useState(null);
