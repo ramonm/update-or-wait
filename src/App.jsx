@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Search, ThumbsUp, ThumbsDown, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from './components/ui/Alert';
-import { Button } from './components/ui/Button';
-import { cn } from './lib/utils';
+// Update these imports to use relative paths
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/Alert/index.jsx';
+import { Button } from '@/components/ui/Button/index.jsx';
+import { cn } from '@/lib/utils.js';
 
 // Mock database - in production, this would come from your backend
 const mockData = {
