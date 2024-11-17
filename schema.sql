@@ -1,4 +1,3 @@
--- schema.sql
 DROP TABLE IF EXISTS updates;
 
 CREATE TABLE updates (
@@ -11,7 +10,6 @@ CREATE TABLE updates (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Initial seed data
 INSERT INTO updates (name, up_votes, down_votes, verdict) VALUES
     ('ios 18', 856, 234, 'UPDATE'),
     ('ios 17', 756, 134, 'UPDATE'),
