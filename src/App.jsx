@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button/index.jsx';
 import { cn } from '@/lib/utils.js';
 import { useTheme } from './contexts/ThemeContext';
 
+
 const API_URL = 'https://update-or-wait.ramon-m.workers.dev';
 
 const cleanUrlSlug = (text) => {
@@ -62,6 +63,7 @@ const App = () => {
     }
   }, []);
 
+  
   // Add click outside handler
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -102,6 +104,16 @@ const App = () => {
     } catch (error) {
       console.error('Error fetching suggestions:', error);
       setSuggestions([]);
+    }
+  };
+  // Add this function to fetch devices
+  const fetchDevices = async (updateName) => {
+    try {
+      const response = await fetch(`${API_URL}?devices=${encodeURIComponent(updateName)}`);
+      const data = await response.json();
+      setDevices(data.devices || []);
+    } catch (error) {
+      console.error('Error fetching devices:', error);
     }
   };
 
@@ -167,11 +179,11 @@ const App = () => {
   };
 
   const handleVote = async (voteType) => {
-  if (!result?.name || isVoting) return;
-  
-  // Check if user has already voted
-  if (hasVoted(result.name)) {
-    setMessage('You have already voted for this item');
+    if (!result?.update_name || isVoting) return;
+    
+    // Check if user has already voted
+  if (hasVoted(result.update_name)) {
+    setMessage('You have already voted for this update');
     return;
   }
   
@@ -185,31 +197,29 @@ const App = () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        name: result.name,
+        name: result.update_name,
         voteType
       }),
     });
 
     const data = await response.json();
-    
-    if (response.ok && !data.error) {
-      setResult(data);
-      recordVote(result.name); // Record the vote
-      // Show success message
-      setMessage('Thank you for your vote!');
-      // Clear success message after 2 seconds
-      setTimeout(() => setMessage(''), 2000);
-    } else {
-      setMessage(data.error || 'Error updating vote. Please try again.');
+      
+      if (response.ok && !data.error) {
+        setResult(data);
+        recordVote(voteKey);
+        setMessage('Thank you for your vote!');
+        setTimeout(() => setMessage(''), 2000);
+      } else {
+        setMessage(data.error || 'Error updating vote. Please try again.');
+      }
+    } catch (error) {
+      console.error('Vote error:', error);
+      setMessage('Error updating vote. Please try again.');
+    } finally {
+      setIsVoting(false);
+      setTimeout(() => setVoteAnimation({ up: false, down: false }), 500);
     }
-  } catch (error) {
-    console.error('Vote error:', error);
-    setMessage('Error updating vote. Please try again.');
-  } finally {
-    setIsVoting(false);
-    setTimeout(() => setVoteAnimation({ up: false, down: false }), 500);
-  }
-};
+  };
 
   return (
     <div className={cn(
@@ -381,61 +391,77 @@ const App = () => {
 </Button>
 </form>
 
-        {/* Results */}
-        {result && (
-          <div className="space-y-4 animate-fadeIn">
-            <div className={cn(
-              "text-center p-6 rounded-lg transform transition-all duration-300",
-              result.verdict === 'UPDATE' 
-                ? isDark ? 'bg-green-900/50' : 'bg-green-100'
-                : isDark ? 'bg-yellow-900/50' : 'bg-yellow-100',
-              'hover:scale-[1.02]'
-            )}>
-              <h2 className={cn(
-                "text-2xl font-bold mb-2",
-                isDark ? "text-white" : "text-gray-900"
-              )}>
-                {result.verdict === 'UPDATE' ? 'Safe to Update! ✅' : 'Better Wait! ⚠️'}
-              </h2>
-              <div className="flex justify-center gap-8 text-gray-700">
-                <div className="flex items-center gap-2">
-                  <ThumbsUp 
-                    className={cn(
-                      "transition-transform duration-200",
-                      isDark ? "text-green-400" : "text-green-600",
-                      voteAnimation.up && "scale-125"
-                    )}
-                  />
-                  <span className={cn(
-                    "font-mono",
-                    isDark ? "text-white" : "text-gray-900"
-                  )}>
-                    {result.up_votes}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ThumbsDown 
-                    className={cn(
-                      "transition-transform duration-200",
-                      isDark ? "text-red-400" : "text-red-600",
-                      voteAnimation.down && "scale-125"
-                    )}
-                  />
-                  <span className={cn(
-                    "font-mono",
-                    isDark ? "text-white" : "text-gray-900"
-                  )}>
-                    {result.down_votes}
-                  </span>
-                </div>
-              </div>
-              <div className={cn(
-                "mt-2 text-sm",
-                isDark ? "text-gray-400" : "text-gray-600"
-              )}>
-                Last updated: {new Date(result.last_updated).toLocaleDateString()}
-              </div>
-            </div>
+ {/* Results */}
+{result && (
+  <div className="space-y-4 animate-fadeIn">
+    {/* Results Display */}
+    <div className={cn(
+      "text-center p-6 rounded-lg transform transition-all duration-300",
+      result.verdict === 'UPDATE' 
+        ? isDark ? 'bg-green-900/50' : 'bg-green-100'
+        : isDark ? 'bg-yellow-900/50' : 'bg-yellow-100',
+      'hover:scale-[1.02]'
+    )}>
+      {/* Software Title */}
+      <div className="mb-4">
+        <h2 className={cn(
+          "text-xl font-semibold",
+          isDark ? "text-gray-200" : "text-gray-700"
+        )}>
+          {result.update_name}
+        </h2>
+      </div>
+
+      {/* Verdict */}
+      <h3 className={cn(
+        "text-2xl font-bold mb-2",
+        isDark ? "text-white" : "text-gray-900"
+      )}>
+        {result.verdict === 'UPDATE' ? 'Safe to Update! ✅' : 'Better Wait! ⚠️'}
+      </h3>
+
+      {/* Vote Count */}
+      <div className="flex justify-center gap-8 text-gray-700">
+        <div className="flex items-center gap-2">
+          <ThumbsUp 
+            className={cn(
+              "transition-transform duration-200",
+              isDark ? "text-green-400" : "text-green-600",
+              voteAnimation.up && "scale-125"
+            )}
+          />
+          <span className={cn(
+            "font-mono",
+            isDark ? "text-white" : "text-gray-900"
+          )}>
+            {result.up_votes}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <ThumbsDown 
+            className={cn(
+              "transition-transform duration-200",
+              isDark ? "text-red-400" : "text-red-600",
+              voteAnimation.down && "scale-125"
+            )}
+          />
+          <span className={cn(
+            "font-mono",
+            isDark ? "text-white" : "text-gray-900"
+          )}>
+            {result.down_votes}
+          </span>
+        </div>
+      </div>
+
+      {/* Last Updated */}
+      <div className={cn(
+        "mt-2 text-sm",
+        isDark ? "text-gray-400" : "text-gray-600"
+      )}>
+        Last updated: {new Date(result.last_updated).toLocaleDateString()}
+      </div>
+    </div>
 
             {/* Voting buttons */}
             <div className="flex gap-4">
